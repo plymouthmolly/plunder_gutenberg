@@ -1,0 +1,54 @@
+#!/usr/bin/python3
+
+# help captain grab a title, author and other metha from book
+from bs4 import BeautifulSoup as bs
+import urllib3
+import sys
+example='http://gutenberg.org/ebooks/2701'
+http = urllib3.PoolManager()
+
+def get_url(url):
+        request = http.request('GET', url)
+        # print(request.status)
+        return request.data
+
+soup = bs(get_url(sys.argv[1]), features="html.parser")
+all_links = soup.find_all('a')
+plaintext=False
+for a in all_links:
+       if 'Plain Text UTF-8' in a:
+             plaintext=a
+             break
+if plaintext:
+       arguments='http://gutenberg.org%s\n' % plaintext['href']
+
+
+# metha table
+# author
+metha = soup.find_all('table', class_='bibrec')
+fields = metha[0].find_all('tr')
+for field in fields:
+    author = field.find_all('th', string='Author')
+    if author:
+        author = author[0].find_next('a')
+        break
+arguments+='%s\n' % str.strip(author.string)
+
+# title
+for field in fields:
+    title = field.find_all('th', string='Title')
+    if title:
+        title = title[0].find_next('td', string=True)
+        break
+arguments+='%s\n' % str.strip(title.string)
+
+
+# language
+for field in fields:
+    lang = field.find_all('th', string='Language')
+    if lang:
+        lang = lang[0].find_next('td', string=True)
+        break
+arguments+='%s\n' % str.strip(lang.string)
+
+print(arguments)
